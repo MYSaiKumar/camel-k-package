@@ -1,0 +1,23 @@
+- name: initialize DEV environment
+  host: locathost
+  tasks:
+
+    - name: "Exec items" 
+      shell: "{{ item }}"
+      with_items:
+        - mkdir -p ~/.aws
+        - touch ~/.aws/config
+        - rm ~/.aws/config
+        - export TERM=dumb
+    
+        - printf "[profile jenkins]\n\
+        - region=us-east-1\n\
+        - role_arn=arn:aws:iam::313979339582:role/integration-platform-management-role\n\
+        - credential_source=EcsContainer\n" >> ~/.aws/config
+
+  tasks:
+    - name: validate the EKS Cluster
+      command: aws eks --region us-east-1 update-kubeconfig --name integration-entgbl-ts3-Cluster --profile jenkins
+  tasks:
+    - name: execute the command to show PODS
+      command: kubectl get pods --namespace=${K8S_NAMESPACE}

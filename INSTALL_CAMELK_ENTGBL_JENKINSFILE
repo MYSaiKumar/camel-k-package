@@ -1,0 +1,35 @@
+pipeline {
+	agent { label 'ecs-kube' }
+	stages {
+		stage('Configure Kamel Client') {
+		    steps {
+                sh '''
+		            chmod a+x $WORKSPACE/libraries/kamel
+                    $WORKSPACE/libraries/kamel version
+		        '''
+		    }
+		}
+        stage('Initialize Environment') {
+			steps {
+				sh 'ansible-playbook  $WORKSPACE/initialize_environment_${ENV}.yml'
+			}
+		}
+        stage('Create Namespace') {
+			steps {
+				sh '''
+                    kubectl create namespace ${K8S_NAMESPACE}
+                    kubectl config set-context --current --namespace=${K8S_NAMESPACE}
+                    kubectl get pods --namespace=${K8S_NAMESPACE}
+				'''
+			}
+		}
+        stage('Install CamelK Client') {
+			steps {
+				sh '''
+                    $WORKSPACE/libraries/kamel install -n ${K8S_NAMESPACE} --force --registry ghcr.io --organization ${GITHUB_REPO} --registry-auth-username ${GITHUB_USERNAME} --registry-auth-password ${GITHUB_PASSWORD}
+					kubectl get pods --namespace=${K8S_NAMESPACE}
+				'''
+			}
+		}
+	}
+}
